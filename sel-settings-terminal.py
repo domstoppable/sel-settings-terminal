@@ -174,7 +174,8 @@ def process_txt_files(files_to_do, args):
     for filename in files_to_do:
         extracted_data = extract_parameters(filename, args.settings)
         if len(extracted_data) > 0:
-            extracted_data.insert(0, [extracted_data[0][0], 'File date', get_file_mod_time(filename)])
+            mod_time = time.strftime("%Y-%m-%d %H:%M", time.gmtime(os.path.getmtime(filename)))
+            extracted_data.insert(0, [extracted_data[0][0], 'File date', mod_time])
             parameter_info += extracted_data
     # Some regex's return lists. We just want the first item from that list
     for k in parameter_info:
@@ -195,9 +196,6 @@ def process_txt_files(files_to_do, args):
     if args.console:
         display_info(parameter_info)
 
-def get_file_mod_time(filename):
-    return time.strftime("%Y-%m-%d %H:%M", time.gmtime(os.path.getmtime(filename)))
-    
 def create_output_as_columns(parameter_info):
     headers = ['Filename', 'File date']
     record = None

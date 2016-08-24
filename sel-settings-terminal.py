@@ -36,6 +36,7 @@ __email__ = "dom@greenlightgo.org"
 
 import sys
 import os
+import time
 import argparse
 import glob
 import regex
@@ -74,7 +75,7 @@ def main(arg=None):
     build_header_exprs()
     parser = argparse.ArgumentParser(
         description='Process individual or multiple RDB files and produce summary' \
-            ' of results as a csv or xls file.',
+                    ' of results as a csv or xls file.',
         epilog='Enjoy. Bug reports and feature requests welcome. Feel free to build a GUI :-)',
         prefix_chars='-/')
 
@@ -110,12 +111,12 @@ def main(arg=None):
                         ' FID, PARTNO, DEVID')
 
     parser.add_argument('-m', '--mode', choices=['rows', 'columns'],
-                         help='Set the output mode to either rows or columns' \
-                         ' In rows, each setting will have it\'s own row. There will be 3' \
-                         ' columns (input file, setting name, value).' \
-                         ' ' \
-                         ' In columns, each file will have just one row, and each setting will' \
-                         ' be presented in it\'s own column.')
+                        help='Set the output mode to either rows or columns' \
+                        ' In rows, each setting will have it\'s own row. There will be 3' \
+                        ' columns (input file, setting name, value).' \
+                        ' ' \
+                        ' In columns, each file will have just one row, and each setting will' \
+                        ' be presented in it\'s own column.')
 
     parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + __version__)
 
@@ -149,7 +150,7 @@ def return_file_paths(args_path, file_extension):
         for p_or_f in paths_to_work_on:
             if os.path.isfile(p_or_f) == True:
                 # add file to the list
-                print os.path.normpath(p_or_f)
+                print(os.path.normpath(p_or_f))
                 files_to_do.append(os.path.normpath(p_or_f))
             elif os.path.isdir(p_or_f) == True:
                 # walk about see what we can find
@@ -172,8 +173,9 @@ def process_txt_files(files_to_do, args):
 
     for filename in files_to_do:
         extracted_data = extract_parameters(filename, args.settings)
-        parameter_info += extracted_data
-
+        if len(extracted_data) > 0:
+            extracted_data.insert(0, [extracted_data[0][0], 'File date', get_file_mod_time(filename)])
+            parameter_info += extracted_data
     # Some regex's return lists. We just want the first item from that list
     for k in parameter_info:
         if not isinstance(k[2], basestring):
@@ -181,7 +183,7 @@ def process_txt_files(files_to_do, args):
                 k[2] = ''
             else:
                 k[2] = k[2][0]
-
+                
     if args.mode == 'columns':
         data = create_output_as_columns(parameter_info)
     else:
@@ -193,8 +195,11 @@ def process_txt_files(files_to_do, args):
     if args.console:
         display_info(parameter_info)
 
+def get_file_mod_time(filename):
+    return time.strftime("%Y-%m-%d %H:%M", time.gmtime(os.path.getmtime(filename)))
+    
 def create_output_as_columns(parameter_info):
-    headers = ['Filename']
+    headers = ['Filename', 'File date']
     record = None
     raw_data = []
     for k in parameter_info:
@@ -234,7 +239,7 @@ def create_output_as_rows(parameter_info):
     data = tablib.Dataset()
     for k in parameter_info:
         data.append(k)
-    data.headers = ['File', 'Setting Name', 'Val']
+    data.headers = ['Filename','Setting Name', 'Val']
     
     return data
 
@@ -296,7 +301,7 @@ def extract_parameters(filename, settings):
             if data:
                 result = find_SEL_text_parameter(setting, data)
 
-        if result <> None:
+        if result != None:
             filename = os.path.basename(filename)
             parameter_info.append([filename, parameter, result])
 
@@ -376,8 +381,8 @@ def get_special_parameter(name, data):
     # name=FID for "FID=SEL-351S-6-R107-V0-Z003003-D20011129","0958"
     # name=PARTNO for "PARTNO=0351S61H3351321","05AE"
     # name=DEVID for "DEVID=TMU 2782","0402"
-
-    expr = r'^\"' + name + r':=([\w :+/\\()!,.\-_\\*\"]*)\n'
+    
+    expr = r'^\"' + name + r':?=([\w :+/\\()!,.\-_\\*]*)".*\n'
     return regex.findall(expr, data, flags=regex.MULTILINE, overlapped=True)
 
 def display_info(parameter_info):
@@ -396,10 +401,10 @@ def display_info(parameter_info):
         display_line = ''
         for index, element in enumerate(line):
             display_line += element.ljust(lengths[index] + 2, ' ')
-        print display_line
+        print(display_line)
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
-        main(' -o csv --path=RDBs -m columns --settings "RID G1:TID FID G1:TR G1:81D1P G1:81D1D G1:81D2P G1:81D2P G1:E81"')
+        main('-m rows -f output.csv -o csv -p RDBs --settings RID G1:TID FID PARTNO G1:TR G1:81D1P G1:81D1D G1:81D2P G1:81D2P G1:E81')
     else:
         main()

@@ -6,6 +6,7 @@ For extracting information from TP setting calculation aids
 * Feature: Add column output mode
 * Feature: Allow specification/overwrite of output file
 * Feature: Match := as value indicator
+* Feature: Include file modification time in output
 * Fix: Group and port header search strings were bad
 * Fix: Less clunky default output file naming scheme
 * Fix: If value is a list, only use 1st item in list
